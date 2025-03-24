@@ -106,6 +106,14 @@ class BleService {
         })
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    fun disconnectDevice(){
+        bluetoothGatt?.disconnect()
+        bluetoothGatt?.close()
+        bluetoothGatt = null
+        Log.d("BleService", "Disconnected from GATT server.")
+    }
+
     companion object {
         private const val SCAN_PERIOD: Long = 10000
     }

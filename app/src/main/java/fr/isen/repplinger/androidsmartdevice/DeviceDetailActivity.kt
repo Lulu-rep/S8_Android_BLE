@@ -1,14 +1,17 @@
 package fr.isen.repplinger.androidsmartdevice
 
 import DeviceDetailScreen
+import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import fr.isen.repplinger.androidsmartdevice.services.BleInstance
 import fr.isen.repplinger.androidsmartdevice.ui.theme.AndroidSmartDeviceTheme
 
 class DeviceDetailActivity: ComponentActivity(){
@@ -24,5 +27,11 @@ class DeviceDetailActivity: ComponentActivity(){
                 }
             }
         }
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    override fun onDestroy() {
+        super.onDestroy()
+        BleInstance.instance.disconnectDevice()
     }
 }
