@@ -64,7 +64,6 @@ class BleService {
         isScanning = true
         Log.d("BleService", "Started BLE scan")
 
-        // Stop scan after a predefined scan period.
         Handler().postDelayed({
             stopScan {
                 onScanStopped()
@@ -84,6 +83,6 @@ class BleService {
     }
 
     companion object {
-        private const val SCAN_PERIOD: Long = 10000 // 10 seconds
+        private const val SCAN_PERIOD: Long = 20000
     }
 }
