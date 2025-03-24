@@ -1,5 +1,10 @@
 package fr.isen.repplinger.androidsmartdevice.views
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,9 +29,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import fr.isen.repplinger.androidsmartdevice.ScanActivity
 import fr.isen.repplinger.androidsmartdevice.models.Device
 import fr.isen.repplinger.androidsmartdevice.services.BleService
 
+@RequiresApi(Build.VERSION_CODES.S)
 @Composable
 fun ScanScreen(modifier: Modifier) {
     val context = LocalContext.current
@@ -41,16 +49,20 @@ fun ScanScreen(modifier: Modifier) {
             modifier = Modifier
                 .size(64.dp)
                 .clickable {
-                    if(BleService().BleInitError(context = context)){
-                        isScanning = !isScanning
-                        if (isScanning) {
-                            //TODO: Start scanning logic
-                            devices.add(Device(
-                                "Device 1",
-                                address = "00:11:22:33:44:55"
-                            ))
+                    if (BleService().BleInitError(context = context)) {
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
+                            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                            BleService().startScan(context) { device ->
+                                devices.add(device)
+                            }
                         } else {
-                            //TODO: Stop scanning logic
+                            Toast.makeText(context, "Permissions are required to scan for devices", Toast.LENGTH_LONG).show()
+                        }
+
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
+                            BleService().stopScan()
+                        } else {
+                            Toast.makeText(context, "Permissions are required to scan for devices", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
