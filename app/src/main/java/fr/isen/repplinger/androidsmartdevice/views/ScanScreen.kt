@@ -1,6 +1,7 @@
 package fr.isen.repplinger.androidsmartdevice.views
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
@@ -32,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import fr.isen.repplinger.androidsmartdevice.DeviceDetailActivity
 import fr.isen.repplinger.androidsmartdevice.models.Device
 import fr.isen.repplinger.androidsmartdevice.services.BleInstance
 
@@ -93,7 +95,19 @@ fun ScanScreen(modifier: Modifier) {
         )
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(devices.filter { showUnknownDevices || it.name != "Unknown" }) { device ->
-                Text(text = "${device.name} - ${device.address}", fontSize = 16.sp, modifier = Modifier.padding(8.dp))
+                Text(
+                    text = "${device.name} - ${device.address}",
+                    fontSize = 16.sp,
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .clickable {
+                            val intent = Intent(context, DeviceDetailActivity::class.java).apply {
+                                putExtra("DEVICE_NAME", device.name)
+                                putExtra("DEVICE_ADDRESS", device.address)
+                            }
+                            context.startActivity(intent)
+                        }
+                )
             }
         }
     }

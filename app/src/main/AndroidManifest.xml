@@ -24,11 +24,11 @@
             android:theme="@style/Theme.AndroidSmartDevice">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity android:name=".ScanActivity"/>
+        <activity android:name=".DeviceDetailActivity"/>
     </application>
 
 </manifest>
