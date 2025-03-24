@@ -21,14 +21,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fr.isen.repplinger.androidsmartdevice.models.Device
+import fr.isen.repplinger.androidsmartdevice.services.BleService
 
 @Composable
 fun ScanScreen(modifier: Modifier) {
+    val context = LocalContext.current
     var isScanning by remember { mutableStateOf(false) }
-    val devices = remember { mutableStateListOf<Device>() }
+    var devices = remember { mutableStateListOf<Device>() }
 
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
         Text("Scan Activity", modifier = Modifier.padding(16.dp), fontSize = 24.sp)
@@ -38,11 +41,17 @@ fun ScanScreen(modifier: Modifier) {
             modifier = Modifier
                 .size(64.dp)
                 .clickable {
-                    isScanning = !isScanning
-                    if (isScanning) {
-                        //TODO: Start scanning logic
-                    } else {
-                        //TODO: Stop scanning logic
+                    if(BleService().BleInitError(context = context)){
+                        isScanning = !isScanning
+                        if (isScanning) {
+                            //TODO: Start scanning logic
+                            devices.add(Device(
+                                "Device 1",
+                                address = "00:11:22:33:44:55"
+                            ))
+                        } else {
+                            //TODO: Stop scanning logic
+                        }
                     }
                 }
                 .align(Alignment.CenterHorizontally)
