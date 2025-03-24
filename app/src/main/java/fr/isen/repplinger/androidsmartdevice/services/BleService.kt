@@ -83,6 +83,6 @@ class BleService {
     }
 
     companion object {
-        private const val SCAN_PERIOD: Long = 20000
+        private const val SCAN_PERIOD: Long = 10000
     }
 }

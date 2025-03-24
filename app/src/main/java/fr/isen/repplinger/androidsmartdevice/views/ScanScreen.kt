@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import fr.isen.repplinger.androidsmartdevice.models.Device
-import fr.isen.repplinger.androidsmartdevice.services.BleService
+import fr.isen.repplinger.androidsmartdevice.services.BleInstance
 
 @RequiresApi(Build.VERSION_CODES.S)
 @Composable
@@ -59,17 +59,17 @@ fun ScanScreen(modifier: Modifier) {
             modifier = Modifier
                 .size(64.dp)
                 .clickable {
-                    if (BleService().BleInitError(context = context)) {
+                    if (BleInstance.instance.BleInitError(context = context)) {
                         if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
                             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
                             if (isScanning) {
-                                BleService().stopScan {
+                                BleInstance.instance.stopScan {
                                     isScanning = false
                                 }
                             } else {
                                 devices.clear()
                                 deviceAddresses.clear()
-                                BleService().startScan(context, { device ->
+                                BleInstance.instance.startScan(context, { device ->
                                     if (deviceAddresses.add(device.address)) {
                                         devices.add(device)
                                     }
