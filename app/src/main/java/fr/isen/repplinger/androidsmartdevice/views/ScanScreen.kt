@@ -1,7 +1,13 @@
 package fr.isen.repplinger.androidsmartdevice.views
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -11,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,33 +31,55 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import fr.isen.repplinger.androidsmartdevice.models.Device
-import fr.isen.repplinger.androidsmartdevice.services.BleService
+import fr.isen.repplinger.androidsmartdevice.services.BleInstance
 
+@RequiresApi(Build.VERSION_CODES.S)
 @Composable
 fun ScanScreen(modifier: Modifier) {
     val context = LocalContext.current
     var isScanning by remember { mutableStateOf(false) }
     var devices = remember { mutableStateListOf<Device>() }
+    var showUnknownDevices by remember { mutableStateOf(true) }
+    val deviceAddresses = remember { mutableSetOf<String>() }
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Scan Activity", modifier = Modifier.padding(16.dp), fontSize = 24.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = showUnknownDevices,
+                onCheckedChange = { showUnknownDevices = it }
+            )
+            Text("Show Unknown Devices", modifier = Modifier.padding(start = 8.dp))
+        }
         Icon(
             if(isScanning) Icons.Default.Clear else Icons.Default.Add,
             contentDescription = if (isScanning) "Stop Scan" else "Start Scan",
             modifier = Modifier
                 .size(64.dp)
                 .clickable {
-                    if(BleService().BleInitError(context = context)){
-                        isScanning = !isScanning
-                        if (isScanning) {
-                            //TODO: Start scanning logic
-                            devices.add(Device(
-                                "Device 1",
-                                address = "00:11:22:33:44:55"
-                            ))
+                    if (BleInstance.instance.BleInitError(context = context)) {
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
+                            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                            if (isScanning) {
+                                BleInstance.instance.stopScan {
+                                    isScanning = false
+                                }
+                            } else {
+                                devices.clear()
+                                deviceAddresses.clear()
+                                BleInstance.instance.startScan(context, { device ->
+                                    if (deviceAddresses.add(device.address)) {
+                                        devices.add(device)
+                                    }
+                                }) {
+                                    isScanning = false
+                                }
+                                isScanning = true
+                            }
                         } else {
-                            //TODO: Stop scanning logic
+                            Toast.makeText(context, "Permissions are required to scan for devices", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -63,8 +92,8 @@ fun ScanScreen(modifier: Modifier) {
             fontSize = 16.sp
         )
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(devices) { device ->
-                Text(text = device.name, fontSize = 16.sp)
+            items(devices.filter { showUnknownDevices || it.name != "Unknown" }) { device ->
+                Text(text = "${device.name} - ${device.address}", fontSize = 16.sp, modifier = Modifier.padding(8.dp))
             }
         }
     }
