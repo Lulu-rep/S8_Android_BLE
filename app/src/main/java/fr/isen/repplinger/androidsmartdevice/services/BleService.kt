@@ -2,6 +2,9 @@ package fr.isen.repplinger.androidsmartdevice.services
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
@@ -13,6 +16,7 @@ import fr.isen.repplinger.androidsmartdevice.models.Device
 
 class BleService {
     private var bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
+    private var bluetoothGatt: BluetoothGatt? = null
     private var isScanning = false
     private lateinit var scanCallback: ScanCallback
     fun BleInitError(context : Context): Boolean {
@@ -80,6 +84,26 @@ class BleService {
         isScanning = false
         Log.d("BleService", "Stopped BLE scan")
         onScanStopped()
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    fun connectToDevice(context: Context, deviceAddress: String, onConnected: () -> Unit) {
+        val device: BluetoothDevice? = bluetoothAdapter?.getRemoteDevice(deviceAddress)
+        if (device == null) {
+            Log.e("BleService", "Device not found. Unable to connect.")
+            return
+        }
+
+        bluetoothGatt = device.connectGatt(context, false, object : BluetoothGattCallback() {
+            override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+                if (newState == BluetoothGatt.STATE_CONNECTED) {
+                    Log.d("BleService", "Connected to GATT server.")
+                    onConnected()
+                } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
+                    Log.d("BleService", "Disconnected from GATT server.")
+                }
+            }
+        })
     }
 
     companion object {
