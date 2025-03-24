@@ -32,7 +32,7 @@ class BleService {
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
-    fun startScan(context: Context, onDeviceFound: (Device) -> Unit) {
+    fun startScan(context: Context, onDeviceFound: (Device) -> Unit, onScanStopped: () -> Unit) {
         if (isScanning) return
         if (!BleInitError(context)) return
 
@@ -66,18 +66,21 @@ class BleService {
 
         // Stop scan after a predefined scan period.
         Handler().postDelayed({
-            stopScan()
+            stopScan {
+                onScanStopped()
+            }
         }, SCAN_PERIOD)
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
-    fun stopScan() {
+    fun stopScan(onScanStopped: () -> Unit) {
         if (!isScanning) return
 
         val bluetoothLeScanner = bluetoothAdapter?.bluetoothLeScanner
         bluetoothLeScanner?.stopScan(scanCallback)
         isScanning = false
         Log.d("BleService", "Stopped BLE scan")
+        onScanStopped()
     }
 
     companion object {

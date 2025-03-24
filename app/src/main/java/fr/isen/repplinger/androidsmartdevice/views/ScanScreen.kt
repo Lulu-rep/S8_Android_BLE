@@ -30,7 +30,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import fr.isen.repplinger.androidsmartdevice.ScanActivity
 import fr.isen.repplinger.androidsmartdevice.models.Device
 import fr.isen.repplinger.androidsmartdevice.services.BleService
 
@@ -41,7 +40,7 @@ fun ScanScreen(modifier: Modifier) {
     var isScanning by remember { mutableStateOf(false) }
     var devices = remember { mutableStateListOf<Device>() }
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Scan Activity", modifier = Modifier.padding(16.dp), fontSize = 24.sp)
         Icon(
             if(isScanning) Icons.Default.Clear else Icons.Default.Add,
@@ -52,15 +51,18 @@ fun ScanScreen(modifier: Modifier) {
                     if (BleService().BleInitError(context = context)) {
                         if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
                             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
-                            BleService().startScan(context) { device ->
-                                devices.add(device)
+                            if (isScanning) {
+                                BleService().stopScan {
+                                    isScanning = false
+                                }
+                            } else {
+                                BleService().startScan(context, { device ->
+                                    devices.add(device)
+                                }) {
+                                    isScanning = false
+                                }
+                                isScanning = true
                             }
-                        } else {
-                            Toast.makeText(context, "Permissions are required to scan for devices", Toast.LENGTH_LONG).show()
-                        }
-
-                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
-                            BleService().stopScan()
                         } else {
                             Toast.makeText(context, "Permissions are required to scan for devices", Toast.LENGTH_LONG).show()
                         }
@@ -76,7 +78,7 @@ fun ScanScreen(modifier: Modifier) {
         )
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(devices) { device ->
-                Text(text = device.name, fontSize = 16.sp)
+                Text(text = "${device.name} - ${device.address}", fontSize = 16.sp, modifier = Modifier.padding(8.dp))
             }
         }
     }
