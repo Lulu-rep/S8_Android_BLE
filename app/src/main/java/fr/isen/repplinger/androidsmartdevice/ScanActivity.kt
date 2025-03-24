@@ -10,6 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import fr.isen.repplinger.androidsmartdevice.ui.theme.AndroidSmartDeviceTheme
+import fr.isen.repplinger.androidsmartdevice.views.ScanScreen
 
 class ScanActivity: ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,7 +19,7 @@ class ScanActivity: ComponentActivity() {
         setContent {
             AndroidSmartDeviceTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Text("Scan Activity", modifier = Modifier.padding(innerPadding))
+                    ScanScreen(modifier = Modifier.padding(innerPadding));
                 }
             }
         }
