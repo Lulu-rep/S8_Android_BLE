@@ -5,6 +5,7 @@ import android.bluetooth.*
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Handler
 import android.util.Log
 import android.widget.Toast
@@ -27,7 +28,6 @@ class BleService {
             Toast.makeText(context, "Bluetooth not supported on this device", Toast.LENGTH_LONG).show()
             return false
         }
-
         if (!bluetoothAdapter.isEnabled) {
             Log.e("BleService", "Bluetooth is not enabled")
             Toast.makeText(context, "Bluetooth not enabled on this device", Toast.LENGTH_LONG).show()
@@ -178,6 +178,29 @@ class BleService {
         gatt?.writeDescriptor(descriptor)
     }
 
+    fun checkPermission(context: Context): Boolean {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val scanPermission = context.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+            val connectPermission = context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+            val fineLocationPermission = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+            Log.d("BleService", "BLUETOOTH_SCAN permission granted: $scanPermission")
+            Log.d("BleService", "BLUETOOTH_CONNECT permission granted: $connectPermission")
+            Log.d("BleService", "ACCESS_FINE_LOCATION permission granted: $fineLocationPermission")
+
+            return scanPermission && connectPermission && fineLocationPermission
+        } else {
+            val bluetoothPermission = context.checkSelfPermission(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED
+            val bluetoothAdminPermission = context.checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED
+            val fineLocationPermission = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+            Log.d("BleService", "BLUETOOTH permission granted: $bluetoothPermission")
+            Log.d("BleService", "BLUETOOTH_ADMIN permission granted: $bluetoothAdminPermission")
+            Log.d("BleService", "ACCESS_FINE_LOCATION permission granted: $fineLocationPermission")
+
+            return bluetoothPermission && bluetoothAdminPermission && fineLocationPermission
+        }
+    }
 
 
     companion object {
