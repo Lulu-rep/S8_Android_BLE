@@ -5,6 +5,7 @@ import android.bluetooth.*
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Handler
 import android.util.Log
 import android.widget.Toast
@@ -20,14 +21,13 @@ class BleService {
     var services: List<BluetoothGattService> = listOf()
     var onCharacteristicChangedCallback: ((BluetoothGattCharacteristic) -> Unit)? = null
 
-    fun BleInitError(context: Context): Boolean {
+    fun bleInitError(context: Context): Boolean {
         val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
         if (bluetoothAdapter == null) {
             Log.e("BleService", "Bluetooth not supported on this device")
             Toast.makeText(context, "Bluetooth not supported on this device", Toast.LENGTH_LONG).show()
             return false
         }
-
         if (!bluetoothAdapter.isEnabled) {
             Log.e("BleService", "Bluetooth is not enabled")
             Toast.makeText(context, "Bluetooth not enabled on this device", Toast.LENGTH_LONG).show()
@@ -39,7 +39,7 @@ class BleService {
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun startScan(context: Context, onDeviceFound: (Device) -> Unit, onScanStopped: () -> Unit) {
         if (isScanning) return
-        if (!BleInitError(context)) return
+        if (!bleInitError(context)) return
 
         scanCallback = object : ScanCallback() {
             @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -123,8 +123,6 @@ class BleService {
             ) {
                 val value = characteristic.value
                 Log.i("BLEService", "Characteristic changed: ${value.joinToString()}")
-                // Update your state or UI with the new value
-                // For example, you can use a callback to notify the UI
                 onCharacteristicChangedCallback?.invoke(characteristic)
             }
         })
@@ -139,7 +137,7 @@ class BleService {
         }
 
         characteristic.value = if (turnOn) byteArrayOf(ledNumber) else byteArrayOf(0x00)
-        val success = bluetoothGatt?.writeCharacteristic(characteristic) ?: false
+        val success = bluetoothGatt?.writeCharacteristic(characteristic) == true
         if (success) {
             Log.d("BleService", "Characteristic written successfully: ${characteristic.value}")
         } else {
@@ -180,6 +178,29 @@ class BleService {
         gatt?.writeDescriptor(descriptor)
     }
 
+    fun checkPermission(context: Context): Boolean {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val scanPermission = context.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+            val connectPermission = context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+            val fineLocationPermission = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+            Log.d("BleService", "BLUETOOTH_SCAN permission granted: $scanPermission")
+            Log.d("BleService", "BLUETOOTH_CONNECT permission granted: $connectPermission")
+            Log.d("BleService", "ACCESS_FINE_LOCATION permission granted: $fineLocationPermission")
+
+            return scanPermission && connectPermission && fineLocationPermission
+        } else {
+            val bluetoothPermission = context.checkSelfPermission(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED
+            val bluetoothAdminPermission = context.checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED
+            val fineLocationPermission = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+            Log.d("BleService", "BLUETOOTH permission granted: $bluetoothPermission")
+            Log.d("BleService", "BLUETOOTH_ADMIN permission granted: $bluetoothAdminPermission")
+            Log.d("BleService", "ACCESS_FINE_LOCATION permission granted: $fineLocationPermission")
+
+            return bluetoothPermission && bluetoothAdminPermission && fineLocationPermission
+        }
+    }
 
 
     companion object {
