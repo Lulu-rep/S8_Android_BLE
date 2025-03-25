@@ -1,6 +1,5 @@
 package fr.isen.repplinger.androidsmartdevice.views
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -46,7 +45,7 @@ fun ScanScreen(
     onScanButtonClick: () -> Unit
 ) {
     val context = LocalContext.current
-    Scaffold (){ contentPadding ->
+    Scaffold { contentPadding ->
         Box(
             modifier = modifier
                 .fillMaxSize()

@@ -20,7 +20,7 @@ class BleService {
     var services: List<BluetoothGattService> = listOf()
     var onCharacteristicChangedCallback: ((BluetoothGattCharacteristic) -> Unit)? = null
 
-    fun BleInitError(context: Context): Boolean {
+    fun bleInitError(context: Context): Boolean {
         val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
         if (bluetoothAdapter == null) {
             Log.e("BleService", "Bluetooth not supported on this device")
@@ -39,7 +39,7 @@ class BleService {
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun startScan(context: Context, onDeviceFound: (Device) -> Unit, onScanStopped: () -> Unit) {
         if (isScanning) return
-        if (!BleInitError(context)) return
+        if (!bleInitError(context)) return
 
         scanCallback = object : ScanCallback() {
             @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -123,8 +123,6 @@ class BleService {
             ) {
                 val value = characteristic.value
                 Log.i("BLEService", "Characteristic changed: ${value.joinToString()}")
-                // Update your state or UI with the new value
-                // For example, you can use a callback to notify the UI
                 onCharacteristicChangedCallback?.invoke(characteristic)
             }
         })
@@ -139,7 +137,7 @@ class BleService {
         }
 
         characteristic.value = if (turnOn) byteArrayOf(ledNumber) else byteArrayOf(0x00)
-        val success = bluetoothGatt?.writeCharacteristic(characteristic) ?: false
+        val success = bluetoothGatt?.writeCharacteristic(characteristic) == true
         if (success) {
             Log.d("BleService", "Characteristic written successfully: ${characteristic.value}")
         } else {
