@@ -95,6 +95,19 @@ class BleService {
             return
         }
 
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            if (context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                Log.e("BleService", "BLUETOOTH_CONNECT permission not granted.")
+                return
+            }
+        } else {
+            if (context.checkSelfPermission(Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED ||
+                context.checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED) {
+                Log.e("BleService", "BLUETOOTH or BLUETOOTH_ADMIN permission not granted.")
+                return
+            }
+        }
+
         bluetoothGatt = device.connectGatt(context, false, object : BluetoothGattCallback() {
             @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
@@ -106,7 +119,6 @@ class BleService {
                 }
             }
 
-            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     Log.d("BleService", "Service discovery completed.")

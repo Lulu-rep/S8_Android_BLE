@@ -34,10 +34,7 @@ class DeviceDetailActivity : ComponentActivity() {
                 val deviceName = intent.getStringExtra("DEVICE_NAME")
                 val deviceAddress = intent.getStringExtra("DEVICE_ADDRESS")
 
-                if (ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.BLUETOOTH_CONNECT
-                    ) == PackageManager.PERMISSION_GRANTED
+                if (BleInstance.instance.checkPermission(context) && BleInstance.instance.bleInitError(context)
                 ) {
                     BleInstance.instance.connectToDevice(context, deviceAddress.toString()) { gatt ->
                         isConnecting.value = false
