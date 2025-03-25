@@ -1,13 +1,7 @@
 package fr.isen.repplinger.androidsmartdevice.services
 
 import android.Manifest
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCallback
-import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothGattDescriptor
-import android.bluetooth.BluetoothGattService
+import android.bluetooth.*
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
@@ -20,10 +14,11 @@ import java.util.UUID
 
 class BleService {
     private var bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
-    private var bluetoothGatt: BluetoothGatt? = null
+    internal var bluetoothGatt: BluetoothGatt? = null
     private var isScanning = false
     private lateinit var scanCallback: ScanCallback
     var services: List<BluetoothGattService> = listOf()
+    var onCharacteristicChangedCallback: ((BluetoothGattCharacteristic) -> Unit)? = null
 
     fun BleInitError(context: Context): Boolean {
         val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
@@ -111,6 +106,7 @@ class BleService {
                 }
             }
 
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     Log.d("BleService", "Service discovery completed.")
@@ -119,6 +115,17 @@ class BleService {
                 } else {
                     Log.e("BleService", "Service discovery failed with status: $status")
                 }
+            }
+
+            override fun onCharacteristicChanged(
+                gatt: BluetoothGatt,
+                characteristic: BluetoothGattCharacteristic
+            ) {
+                val value = characteristic.value
+                Log.i("BLEService", "Characteristic changed: ${value.joinToString()}")
+                // Update your state or UI with the new value
+                // For example, you can use a callback to notify the UI
+                onCharacteristicChangedCallback?.invoke(characteristic)
             }
         })
     }
@@ -147,6 +154,32 @@ class BleService {
         bluetoothGatt = null
         Log.d("BleService", "Disconnected from GATT server.")
     }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    fun setCharacteristicNotification(
+        serviceIndex: Int,
+        characteristicIndex: Int,
+        enable: Boolean
+    ) {
+        val gatt = bluetoothGatt
+        Log.d("BleService", "setCharacteristicNotification $enable")
+        Log.d("BleService", "serviceUID ${gatt?.services[serviceIndex]?.uuid}")
+        Log.d(
+            "BleService",
+            "characteristicUID ${gatt?.services[serviceIndex]?.characteristics[characteristicIndex]?.uuid}"
+        )
+        val characteristic = gatt?.services[serviceIndex]?.characteristics[characteristicIndex]
+        gatt?.setCharacteristicNotification(characteristic, enable)
+
+        val descriptor = characteristic?.getDescriptor(
+            UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+        )
+        val value =
+            if (enable) BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE else BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
+        descriptor?.setValue(value)
+        gatt?.writeDescriptor(descriptor)
+    }
+
 
 
     companion object {

@@ -1,20 +1,12 @@
+package fr.isen.repplinger.androidsmartdevice.views
+
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,14 +21,16 @@ import fr.isen.repplinger.androidsmartdevice.R
 import fr.isen.repplinger.androidsmartdevice.services.BleInstance
 
 @Composable
-fun DeviceDetailScreen(modifier: Modifier, deviceName: String?, deviceAddress: String?) {
+fun DeviceDetailScreen(modifier: Modifier = Modifier, deviceName: String?, deviceAddress: String?) {
     val context = LocalContext.current
     var isConnecting by remember { mutableStateOf(true) }
     var led1Status by remember { mutableStateOf(false) }
     var led2Status by remember { mutableStateOf(false) }
     var led3Status by remember { mutableStateOf(false) }
-    var b1Clicks by remember { mutableIntStateOf(0) }
-    var b3Clicks by remember { mutableIntStateOf(0) }
+    var b1Notif by remember { mutableStateOf(false) }
+    var b3Notif by remember { mutableStateOf(false) }
+    var b1Clicks by remember { mutableStateOf("") }
+    var b3Clicks by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         if (ContextCompat.checkSelfPermission(
@@ -46,11 +40,21 @@ fun DeviceDetailScreen(modifier: Modifier, deviceName: String?, deviceAddress: S
         ) {
             BleInstance.instance.connectToDevice(context, deviceAddress.toString()) { gatt ->
                 isConnecting = false
-//                BleInstance.instance.subscribeToB1Notification(gatt){
-//                    b1Clicks++
-//                }
-            }
+                BleInstance.instance.onCharacteristicChangedCallback = { characteristic ->
+                    val value = characteristic.value
+                    Log.d("BLE", "Characteristic changed: ${value.joinToString()}")
+                    Log.d("BLE", "Characteristic UUID: ${characteristic.uuid}")
+                    when (characteristic.uuid) {
+                        BleInstance.instance.bluetoothGatt?.services[3]?.characteristics?.get(0)?.uuid -> {
+                            b1Clicks = value.joinToString()
+                        }
 
+                        BleInstance.instance.bluetoothGatt?.services[2]?.characteristics?.get(1)?.uuid -> {
+                            b3Clicks = value.joinToString()
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -130,10 +134,46 @@ fun DeviceDetailScreen(modifier: Modifier, deviceName: String?, deviceAddress: S
                 ) {
                     Text(text = "Toggle LED 3 (Current: ${if (led3Status) "On" else "Off"})", color = Color.White)
                 }
-                Text(text = "Main Button Clicks: $b1Clicks", color = Color.White)
-
-                Text(text = "Third Button Clicks: $b3Clicks", color = Color.White)
-
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    Text("Subscribe to Button 1")
+                    Checkbox(
+                        checked = b1Notif,
+                        onCheckedChange = { isChecked ->
+                            b1Notif = isChecked
+                            if (isChecked) {
+                                BleInstance.instance.setCharacteristicNotification(3, 0, true)
+                            } else {
+                                BleInstance.instance.setCharacteristicNotification(3, 0, false)
+                            }
+                        },
+                    )
+                }
+                if (b1Notif) {
+                    Text("Button 1 value: $b1Clicks")
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    Text("Subscribe to Button 3")
+                    Checkbox(
+                        checked = b3Notif,
+                        onCheckedChange = { isChecked ->
+                            b3Notif = isChecked
+                            if (isChecked) {
+                                BleInstance.instance.setCharacteristicNotification(2, 1, true)
+                            } else {
+                                BleInstance.instance.setCharacteristicNotification(2, 1, false)
+                            }
+                        }
+                    )
+                }
+                if (b3Notif) {
+                    Text("Button 3 value: $b3Clicks")
+                }
             }
         }
     }

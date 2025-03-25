@@ -1,6 +1,6 @@
 package fr.isen.repplinger.androidsmartdevice
 
-import DeviceDetailScreen
+import fr.isen.repplinger.androidsmartdevice.views.DeviceDetailScreen
 import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
