@@ -5,6 +5,8 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattService
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
@@ -13,6 +15,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresPermission
 import fr.isen.repplinger.androidsmartdevice.models.Device
+import java.util.UUID
 
 class BleService {
     private var bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
@@ -95,15 +98,48 @@ class BleService {
         }
 
         bluetoothGatt = device.connectGatt(context, false, object : BluetoothGattCallback() {
+            @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                 if (newState == BluetoothGatt.STATE_CONNECTED) {
                     Log.d("BleService", "Connected to GATT server.")
-                    onConnected()
+                    gatt.discoverServices()
                 } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
                     Log.d("BleService", "Disconnected from GATT server.")
                 }
             }
+
+            override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    Log.d("BleService", "Service discovery completed.")
+                    onConnected()
+                } else {
+                    Log.e("BleService", "Service discovery failed with status: $status")
+                }
+            }
         })
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    fun toggleLed(ledNumber: Byte, turnOn: Boolean) {
+        val service: BluetoothGattService? = bluetoothGatt?.getService(SERVICE_UUID)
+        if (service == null) {
+            Log.e("BleService", "Service not found!")
+            return
+        }
+
+        val characteristic: BluetoothGattCharacteristic? = service.getCharacteristic(CHARACTERISTIC_UUID)
+        if (characteristic == null) {
+            Log.e("BleService", "Characteristic not found!")
+            return
+        }
+
+        characteristic.value = if(turnOn) byteArrayOf(ledNumber) else byteArrayOf(0x00)
+        val success = bluetoothGatt?.writeCharacteristic(characteristic) ?: false
+        if (success) {
+            Log.d("BleService", "Characteristic written successfully: ${characteristic.value}")
+        } else {
+            Log.e("BleService", "Failed to write characteristic")
+        }
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -115,6 +151,8 @@ class BleService {
     }
 
     companion object {
+        private val SERVICE_UUID = UUID.fromString("0000feed-cc7a-482a-984a-7f2ed5b3e58f")
+        private val CHARACTERISTIC_UUID = UUID.fromString("0000abcd-8e22-4541-9d4c-21edae82ed19")
         private const val SCAN_PERIOD: Long = 10000
     }
 }

@@ -34,4 +34,5 @@ class DeviceDetailActivity: ComponentActivity(){
         super.onDestroy()
         BleInstance.instance.disconnectDevice()
     }
+
 }
