@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -22,7 +23,9 @@ class BleService {
     private var bluetoothGatt: BluetoothGatt? = null
     private var isScanning = false
     private lateinit var scanCallback: ScanCallback
-    fun BleInitError(context : Context): Boolean {
+    var services: List<BluetoothGattService> = listOf()
+
+    fun BleInitError(context: Context): Boolean {
         val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
         if (bluetoothAdapter == null) {
             Log.e("BleService", "Bluetooth not supported on this device")
@@ -90,7 +93,7 @@ class BleService {
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    fun connectToDevice(context: Context, deviceAddress: String, onConnected: () -> Unit) {
+    fun connectToDevice(context: Context, deviceAddress: String, onConnected: (BluetoothGatt) -> Unit) {
         val device: BluetoothDevice? = bluetoothAdapter?.getRemoteDevice(deviceAddress)
         if (device == null) {
             Log.e("BleService", "Device not found. Unable to connect.")
@@ -111,7 +114,8 @@ class BleService {
             override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     Log.d("BleService", "Service discovery completed.")
-                    onConnected()
+                    services = gatt.services
+                    onConnected(gatt)
                 } else {
                     Log.e("BleService", "Service discovery failed with status: $status")
                 }
@@ -121,19 +125,13 @@ class BleService {
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun toggleLed(ledNumber: Byte, turnOn: Boolean) {
-        val service: BluetoothGattService? = bluetoothGatt?.getService(SERVICE_UUID)
-        if (service == null) {
-            Log.e("BleService", "Service not found!")
-            return
-        }
-
-        val characteristic: BluetoothGattCharacteristic? = service.getCharacteristic(CHARACTERISTIC_UUID)
+        val characteristic = services.getOrNull(2)?.characteristics?.getOrNull(0)
         if (characteristic == null) {
             Log.e("BleService", "Characteristic not found!")
             return
         }
 
-        characteristic.value = if(turnOn) byteArrayOf(ledNumber) else byteArrayOf(0x00)
+        characteristic.value = if (turnOn) byteArrayOf(ledNumber) else byteArrayOf(0x00)
         val success = bluetoothGatt?.writeCharacteristic(characteristic) ?: false
         if (success) {
             Log.d("BleService", "Characteristic written successfully: ${characteristic.value}")
@@ -143,16 +141,15 @@ class BleService {
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    fun disconnectDevice(){
+    fun disconnectDevice() {
         bluetoothGatt?.disconnect()
         bluetoothGatt?.close()
         bluetoothGatt = null
         Log.d("BleService", "Disconnected from GATT server.")
     }
 
+
     companion object {
-        private val SERVICE_UUID = UUID.fromString("0000feed-cc7a-482a-984a-7f2ed5b3e58f")
-        private val CHARACTERISTIC_UUID = UUID.fromString("0000abcd-8e22-4541-9d4c-21edae82ed19")
         private const val SCAN_PERIOD: Long = 10000
     }
 }

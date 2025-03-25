@@ -35,8 +35,8 @@ fun DeviceDetailScreen(modifier: Modifier, deviceName: String?, deviceAddress: S
     var led1Status by remember { mutableStateOf(false) }
     var led2Status by remember { mutableStateOf(false) }
     var led3Status by remember { mutableStateOf(false) }
-    var mainButtonClicks by remember { mutableIntStateOf(0) }
-    var thirdButtonClicks by remember { mutableIntStateOf(0) }
+    var b1Clicks by remember { mutableIntStateOf(0) }
+    var b3Clicks by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
         if (ContextCompat.checkSelfPermission(
@@ -44,9 +44,13 @@ fun DeviceDetailScreen(modifier: Modifier, deviceName: String?, deviceAddress: S
                 Manifest.permission.BLUETOOTH_CONNECT
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-            BleInstance.instance.connectToDevice(context, deviceAddress.toString()) {
+            BleInstance.instance.connectToDevice(context, deviceAddress.toString()) { gatt ->
                 isConnecting = false
+//                BleInstance.instance.subscribeToB1Notification(gatt){
+//                    b1Clicks++
+//                }
             }
+
         }
     }
 
@@ -126,26 +130,10 @@ fun DeviceDetailScreen(modifier: Modifier, deviceName: String?, deviceAddress: S
                 ) {
                     Text(text = "Toggle LED 3 (Current: ${if (led3Status) "On" else "Off"})", color = Color.White)
                 }
-                Button(
-                    onClick = { TODO() },
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE)),
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .fillMaxWidth()
-                ) {
-                    Text(text = "Main Button Clicks: $mainButtonClicks", color = Color.White)
-                }
-                Button(
-                    onClick = { TODO() },
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE)),
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .fillMaxWidth()
-                ) {
-                    Text(text = "Third Button Clicks: $thirdButtonClicks", color = Color.White)
-                }
+                Text(text = "Main Button Clicks: $b1Clicks", color = Color.White)
+
+                Text(text = "Third Button Clicks: $b3Clicks", color = Color.White)
+
             }
         }
     }
